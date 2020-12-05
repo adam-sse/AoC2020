@@ -2,18 +2,28 @@ package day5;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import util.Util;
 
 public class BoardingPass {
 
-	public char[] rows;
+	private static final Pattern LINE_REGEX = Pattern.compile("(?<rows>[FB]{7})(?<columns>[LR]{3})");
 	
-	public char[] columns;
+	private char[] rows;
+	
+	private char[] columns;
 	
 	public BoardingPass(String line) {
-		this.rows = line.substring(0, 7).toCharArray();
-		this.columns = line.substring(7).toCharArray();
+		Matcher m = LINE_REGEX.matcher(line);
+		if (m.matches()) {
+			this.rows = m.group("rows").toCharArray();
+			this.columns = m.group("columns").toCharArray();
+			
+		} else {
+			throw new IllegalArgumentException("Invalid BoardingPass line: " + line);
+		}
 	}
 	
 	private static int binaryPartition(char[] steps, char lower, char higher) {
