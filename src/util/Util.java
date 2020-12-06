@@ -33,4 +33,27 @@ public class Util {
 				.collect(Collectors.toList());
 	}
 	
+	public static List<List<String>> readGroupedLineInputFile(String resource) {
+		List<String> lines = readInputFile(resource);
+		
+		List<List<String>> groups = new ArrayList<>(1024);
+		
+		List<String> currentGroupLines = new ArrayList<>(10);
+		for (String line : lines) {
+			if (line.isEmpty()) {
+				groups.add(currentGroupLines);
+				currentGroupLines = new ArrayList<>(100);
+				
+			} else {
+				currentGroupLines.add(line);
+			}
+		}
+		
+		if (!currentGroupLines.isEmpty()) {
+			groups.add(currentGroupLines);
+		}
+		
+		return groups;
+	}
+	
 }

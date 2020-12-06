@@ -1,9 +1,9 @@
 package day4;
 
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import util.Util;
 
@@ -101,33 +101,17 @@ public class Passport {
 		return byrValid() && iyrValid() && eyrValid() && hgtValid() && hclValid() && eclValid() && pidValid();
 	}
 	
-	public static List<Passport> read(List<String> lines) {
-		List<Passport> passports = new LinkedList<>();
-		
-		List<String> currentPassportLines = new LinkedList<>();
-		for (String line : lines) {
-			if (line.isEmpty()) {
-				passports.add(new Passport(currentPassportLines));
-				currentPassportLines.clear();
-				
-			} else {
-				currentPassportLines.add(line);
-			}
-		}
-		
-		if (!currentPassportLines.isEmpty()) {
-			passports.add(new Passport(currentPassportLines));
-		}
-		
-		return passports;
+	static Stream<Passport> read(String resource) {
+		return Util.readGroupedLineInputFile(resource).stream()
+				.map((lineGroup) -> new Passport(lineGroup));
 	}
 	
 	public static void main(String[] args) {
-		List<Passport> passports = Passport.read(Util.readInputFile("/day4/input.txt"));
+		long result = read("/day4/input.txt")
+				.filter(Passport::isValid)
+				.count();
 		
-		System.out.println(passports.stream()
-				.filter((passport) -> passport.isValid())
-				.count());
+		System.out.println(result);
 	}
 	
 }
