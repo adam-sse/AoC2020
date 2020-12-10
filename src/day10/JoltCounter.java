@@ -1,7 +1,6 @@
 package day10;
 
 import java.util.Arrays;
-import java.util.List;
 
 import util.Util;
 
@@ -88,13 +87,7 @@ public class JoltCounter {
 	}
 	
 	public static void main(String[] args) {
-		List<Integer> input = Util.readIntegerInputFile("/day10/input.txt");
-		int[] arr = new int[input.size()];
-		for (int i = 0; i < arr.length; i++) {
-			arr[i] = input.get(i);
-		}
-		
-		JoltCounter jc = new JoltCounter(arr);
+		JoltCounter jc = new JoltCounter(Util.toArray(Util.readIntegerInputFile("/day10/input.txt")));
 		System.out.println(jc.countDifferences(1) * jc.countDifferences(3));
 		
 		System.out.println(jc.countPossibleArrangements());

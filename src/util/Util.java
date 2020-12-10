@@ -33,6 +33,15 @@ public class Util {
 				.collect(Collectors.toList());
 	}
 	
+	public static int[]	toArray(List<Integer> list) {
+		int[] array = new int[list.size()];
+		int i = 0;
+		for (Integer x : list) {
+			array[i++] = x;
+		}
+		return array;
+	}
+	
 	public static List<List<String>> readGroupedLineInputFile(String resource) {
 		List<String> lines = readInputFile(resource);
 		
