@@ -2,7 +2,6 @@ package day13;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.LongStream;
 
 import util.Util;
 
@@ -42,32 +41,40 @@ public class BusStop {
 		return (earliestDeparture - timestamp) * earliestId;
 	}
 	
-	public long getEarliestSequenceStart() {
-		int firstId = ids.get(0);
-		LongStream possibleTs = LongStream.iterate(0, l -> l + firstId);
-		
-		for (int j = 1; j < ids.size(); j++) {
-			int i = j;
-			int id = ids.get(i);
-			if (ids.get(i) != X) {
-				possibleTs = possibleTs.filter(possibleT -> (possibleT + i) % id == 0);
-			}
+	// greatest common divisor
+	public static long gcd(long a, long b) {
+		long z1 = Math.max(a, b);
+		long z2 = Math.min(a, b);
+		if (z2 == 0) {
+			return z1;
 		}
-		
-		return possibleTs.parallel().findFirst().getAsLong();
+		return gcd(z2, z1 % z2);
 	}
 	
-	public String createConstraintSystem() {
-		StringBuilder r = new StringBuilder();
-		
-		r.append("((t%").append(ids.get(0)).append(")=0)");
-		for (int i = 1; i < ids.size(); i++) {
-			if (ids.get(i) != X) {
-				r.append(" and ((t+").append(i).append(")%").append(ids.get(i)).append("=0)");
+	// least common multiple
+	public static long lcm(long a, long b) {
+		return Math.abs(a * b) / gcd(a, b);
+	}
+	
+	public long getEarliestSequenceStart() {
+		long t = 0;
+		long increase = 1;
+		for (int i = 0; i < ids.size(); i++) {
+			int id = ids.get(i);
+			if (id != X) {
+				// increase t until it is correct for this bus
+				// i.e.: t plus the number of the bus must be a multiple of the ID
+				while ((t + i) % id != 0) {
+					t += increase;
+				}
+				
+				// now modify the increase steps, to ensure that all future
+				// increases don't "break" the solution for this bus
+				increase = lcm(increase, id);
 			}
 		}
 		
-		return r.toString();
+		return t;
 	}
 	
 	public static void main(String[] args) {
@@ -77,8 +84,7 @@ public class BusStop {
 		BusStop bs = new BusStop(input.get(1));
 		
 		System.out.println(bs.getEarliestDepartureAfter(timestamp));
-		System.out.print("paste this into WolframAlpha: ");
-		System.out.println(bs.createConstraintSystem());
+		System.out.println(bs.getEarliestSequenceStart());
 	}
 
 }
