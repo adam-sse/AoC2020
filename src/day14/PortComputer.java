@@ -1,6 +1,5 @@
 package day14;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,96 +7,81 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import util.Util;
+import virtual_machine.Instruction;
+import virtual_machine.VirtualMachine;
 
-public class PortComputer {
+public class PortComputer extends VirtualMachine {
 
-	private Integer[] mask;
-	
-	private Map<Long, Long> memory;
-	
-	private List<Instruction> instructions;
-	
-	private enum Operation {
-		MASK, MEM,
-	}
-	
-	private class Instruction {
-		
-		private Operation operation;
-		
-		private long arg1;
-		
-		private long arg2;
-		
-		private String argS;
+	private class Mask implements Instruction {
 
-		public Instruction(Operation operation, long arg1, long arg2) {
-			this.operation = operation;
-			this.arg1 = arg1;
-			this.arg2 = arg2;
-		}
+		private String arg;
 		
-		public Instruction(Operation operation, String argS) {
-			this.operation = operation;
-			this.argS = argS;
-		}
-		
-		public void execute() {
-			switch (operation) {
-			case MEM:
-				setMemory(arg1, arg2);
-				break;
-			case MASK:
-				setMask(argS);
-				break;
-			}
+		public Mask(String line) {
+			this.arg = line.substring("mask = ".length());
 		}
 		
 		@Override
-		public String toString() {
-			return operation.name();
+		public void execute() {
+			currentMask = new Integer[currentMask.length];
+			
+			for (int i = 0; i < currentMask.length; i++) {
+				switch (arg.charAt(i)) {
+				case '1':
+					currentMask[i] = 1;
+					break;
+				case '0':
+					currentMask[i] = 0;
+					break;
+				case 'X':
+					break;
+				}
+			}
 		}
 		
 	}
 	
 	private static final Pattern MEM_REGEX = Pattern.compile("mem\\[(?<address>[0-9]+)\\] = (?<value>[0-9]+)");
 	
+	private class Mem implements Instruction {
+
+		private long address;
+		
+		private long value;
+		
+		public Mem(String line) {
+			Matcher m = MEM_REGEX.matcher(line);
+			if (!m.matches()) {
+				throw new IllegalArgumentException();
+			}
+			this.address = Long.parseLong(m.group("address"));
+			this.value = Long.parseLong(m.group("value"));
+		}
+
+		@Override
+		public void execute() {
+			setMemory(address, value);
+		}
+		
+	}
+	
+	private Integer[] currentMask;
+	
+	private Map<Long, Long> memory;
+	
+	
 	public PortComputer(List<String> program) {
-		mask = new Integer[36];
+		currentMask = new Integer[36];
 		memory = new HashMap<>(1024);
-		instructions = new ArrayList<>(program.size());
 		
 		for (String line : program) {
 			if (line.startsWith("mask = ")) {
-				instructions.add(new Instruction(Operation.MASK, line.substring("mask = ".length())));
+				addInstruction(new Mask(line));
 			} else {
-				Matcher m = MEM_REGEX.matcher(line);
-				if (m.matches()) {
-					instructions.add(new Instruction(Operation.MEM,
-							Long.parseLong(m.group("address")), Long.parseLong(m.group("value"))));
-				} else {
-					System.err.println(line);
-				}
+				addInstruction(new Mem(line));
 			}
 		}
 	}
 	
-	private void setMask(String maskStr) {
-		mask = new Integer[mask.length];
-		
-		for (int i = 0; i < mask.length; i++) {
-			switch (maskStr.charAt(i)) {
-			case '1':
-				mask[i] = 1;
-				break;
-			case '0':
-				mask[i] = 0;
-				break;
-			case 'X':
-				break;
-			}
-		}
-	}
 	
 	private void setMemory(Integer[] address, int i, long value) {
 		if (i == address.length) {
@@ -125,25 +109,19 @@ public class PortComputer {
 	}
 	
 	private void setMemory(long address, long value) {
-		Integer[] decodedAddress = new Integer[mask.length];
+		Integer[] decodedAddress = new Integer[currentMask.length];
 		
-		for (int i = 0; i < mask.length; i++) {
-			if (mask[i] == null) {
+		for (int i = 0; i < currentMask.length; i++) {
+			if (currentMask[i] == null) {
 				decodedAddress[i] = null;
-			} else if (mask[i] == 1) {
+			} else if (currentMask[i] == 1) {
 				decodedAddress[i] = 1;
 			} else {
-				decodedAddress[i] = (address & (1L << (mask.length - i - 1))) == 0L ? 0 : 1;
+				decodedAddress[i] = (address & (1L << (currentMask.length - i - 1))) == 0L ? 0 : 1;
 			}
 		}
 		
 		setMemory(decodedAddress, 0, value);
-	}
-	
-	public void run() {
-		for (Instruction inst : instructions) {
-			inst.execute();
-		}
 	}
 	
 	public long sumMemory() {

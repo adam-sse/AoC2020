@@ -1,18 +1,12 @@
 package day12;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import util.Util;
+import virtual_machine.VirtualMachine;
 
-public class Ship {
-	
-	private Vec pos = new Vec(0, 0);
-	
-	private Vec waypoint = new Vec(10, 1);
-	
-	private List<Instruction> instructions;
-	
+public class Ship extends VirtualMachine {
+
 	private enum Operation {
 		N,
 		S,
@@ -23,8 +17,8 @@ public class Ship {
 		F,
 	}
 	
-	private class Instruction {
-		
+	private class Instruction implements virtual_machine.Instruction {
+
 		private Operation operation;
 		
 		private int argument;
@@ -34,6 +28,7 @@ public class Ship {
 			this.argument = argument;
 		}
 		
+		@Override
 		public void execute() {
 			int argument = this.argument;
 			switch (operation) {
@@ -77,19 +72,16 @@ public class Ship {
 		
 	}
 	
+	private Vec pos = new Vec(0, 0);
+	
+	private Vec waypoint = new Vec(10, 1);
+	
 	public Ship(List<String> program) {
-		this.instructions = new ArrayList<>(program.size());
 		for (String line : program) {
-			this.instructions.add(new Instruction(Character.toUpperCase(line.charAt(0)), Integer.parseInt(line.substring(1))));
+			addInstruction(new Instruction(Character.toUpperCase(line.charAt(0)), Integer.parseInt(line.substring(1))));
 		}
 	}
 	
-	
-	public void run() {
-		for (Instruction inst : instructions) {
-			inst.execute();
-		}
-	}
 	
 	public int getDistanceManhattan() {
 		return pos.manhattan();

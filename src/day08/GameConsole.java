@@ -1,102 +1,111 @@
 package day08;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import util.Util;
+import virtual_machine.Instruction;
+import virtual_machine.VirtualMachine;
 
-public class GameConsole {
+public class GameConsole extends VirtualMachine {
 
 	private int accumulator;
 	
-	private int ip;
-	
-	private boolean halt;
-	
-	private List<Instruction> instructions;
-	
-	private enum Operation {
-		NOP,
-		ACC,
-		JMP,
-	}
-	
-	private class Instruction {
-		
-		private Operation operation;
-		
-		private int argument;
+	private class Nop implements Instruction {
 
-		public Instruction(String operation, int argument) {
-			this.operation = Operation.valueOf(operation.toUpperCase());
-			this.argument = argument;
+		private int value;
+		
+		public Nop(int value) {
+			this.value = value;
 		}
 		
+		@Override
 		public void execute() {
-			switch (operation) {
-			case NOP:
-				ip++;
+		}
+		
+	}
+	
+	private class Acc implements Instruction {
+
+		private int value;
+		
+		public Acc(int value) {
+			this.value = value;
+		}
+		
+		@Override
+		public void execute() {
+			accumulator += value;
+		}
+		
+	}
+	
+	private class Jmp implements Instruction {
+		
+		private int value;
+		
+		public Jmp(int value) {
+			this.value = value;
+		}
+		
+		@Override
+		public void execute() {
+			jumpRel(value);
+		}
+		
+	}
+	
+	
+	public GameConsole(List<String> program) {
+		for (String line : program) {
+			int value = Integer.parseInt(line.substring(4));
+			
+			switch (line.substring(0, 3)) {
+			case "nop":
+				addInstruction(new Nop(value));
 				break;
-				
-			case ACC:
-				accumulator += argument;
-				ip++;
+			case "acc":
+				addInstruction(new Acc(value));
 				break;
-				
-			case JMP:
-				ip += argument;
+			case "jmp":
+				addInstruction(new Jmp(value));
 				break;
 			}
 		}
-		
 	}
 	
-	public GameConsole(List<String> program) {
-		this.instructions = new ArrayList<>(program.size());
-		for (String line : program) {
-			instructions.add(new Instruction(line.substring(0, 3), Integer.parseInt(line.substring(4))));
-		}
-	}
-	
+	@Override
 	public void reset() {
-		ip = 0;
-		halt = false;
+		super.reset();
 		accumulator = 0;
-	}
-	
-	private void executeOne() {
-		instructions.get(ip).execute();
-		if (ip == instructions.size()) {
-			halt = true;
-		}
 	}
 	
 	boolean isLoop() {
 		Set<Integer> visited = new HashSet<>();
 		
-		while (!halt) {
-			if (visited.contains(ip)) {
+		while (!isHalt()) {
+			if (visited.contains(getIp())) {
 				break;
 			}
-			visited.add(ip);
+			visited.add(getIp());
 			
-			executeOne();
+			executeSingle();
 		}
 		
-		return !halt;
+		return !isHalt();
 	}
 	
-	private static boolean switchInstruction(Instruction inst) {
+	private boolean switchInstruction(int index) {
 		boolean switched = false;
+		Instruction inst = getInstruction(index);
 		
-		if (inst.operation == Operation.NOP) {
-			inst.operation = Operation.JMP;
+		if (inst instanceof Nop) {
+			setInstruction(index, new Jmp(((Nop) inst).value));
 			switched = true;
 			
-		} else if (inst.operation == Operation.JMP) {
-			inst.operation = Operation.NOP;
+		} else if (inst instanceof Jmp) {
+			setInstruction(index, new Nop(((Jmp) inst).value));
 			switched = true;
 		}
 		
@@ -104,17 +113,15 @@ public class GameConsole {
 	}
 	
 	public int findNonLoopMutation() {
-		for (int i = 0; i < instructions.size(); i++) {
-			Instruction inst = instructions.get(i);
-			
-			if (switchInstruction(inst)) {
+		for (int i = 0; i < getNumInstructions(); i++) {
+			if (switchInstruction(i)) {
 				if (!isLoop()) {
 					break;
 				}
 				
 				reset();
 				
-				switchInstruction(inst);
+				switchInstruction(i);
 			}
 		}
 		
