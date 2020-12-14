@@ -3,11 +3,10 @@ package day14;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import util.Util;
 import virtual_machine.Instruction;
+import virtual_machine.InstructionFactory;
 import virtual_machine.VirtualMachine;
 
 public class PortComputer extends VirtualMachine {
@@ -16,8 +15,8 @@ public class PortComputer extends VirtualMachine {
 
 		private String arg;
 		
-		public Mask(String line) {
-			this.arg = line.substring("mask = ".length());
+		public Mask(String value) {
+			this.arg = value;
 		}
 		
 		@Override
@@ -40,21 +39,15 @@ public class PortComputer extends VirtualMachine {
 		
 	}
 	
-	private static final Pattern MEM_REGEX = Pattern.compile("mem\\[(?<address>[0-9]+)\\] = (?<value>[0-9]+)");
-	
 	private class Mem implements Instruction {
 
 		private long address;
 		
 		private long value;
 		
-		public Mem(String line) {
-			Matcher m = MEM_REGEX.matcher(line);
-			if (!m.matches()) {
-				throw new IllegalArgumentException();
-			}
-			this.address = Long.parseLong(m.group("address"));
-			this.value = Long.parseLong(m.group("value"));
+		public Mem(String address, String value) {
+			this.address = Long.parseLong(address);
+			this.value = Long.parseLong(value);
 		}
 
 		@Override
@@ -73,13 +66,13 @@ public class PortComputer extends VirtualMachine {
 		currentMask = new Integer[36];
 		memory = new HashMap<>(1024);
 		
-		for (String line : program) {
-			if (line.startsWith("mask = ")) {
-				addInstruction(new Mask(line));
-			} else {
-				addInstruction(new Mem(line));
-			}
-		}
+		InstructionFactory factory = new InstructionFactory();
+		factory.registerInstruction("mask = (?<value>[01X]{36})",
+				m -> new Mask(m.group("value")));
+		factory.registerInstruction("mem\\[(?<address>[0-9]+)\\] = (?<value>[0-9]+)",
+				m -> new Mem(m.group("address"), m.group("value")));
+		
+		factory.parseInstructions(program, this);
 	}
 	
 	

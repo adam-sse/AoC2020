@@ -6,6 +6,7 @@ import java.util.Set;
 
 import util.Util;
 import virtual_machine.Instruction;
+import virtual_machine.InstructionFactory;
 import virtual_machine.VirtualMachine;
 
 public class GameConsole extends VirtualMachine {
@@ -56,23 +57,13 @@ public class GameConsole extends VirtualMachine {
 		
 	}
 	
-	
 	public GameConsole(List<String> program) {
-		for (String line : program) {
-			int value = Integer.parseInt(line.substring(4));
-			
-			switch (line.substring(0, 3)) {
-			case "nop":
-				addInstruction(new Nop(value));
-				break;
-			case "acc":
-				addInstruction(new Acc(value));
-				break;
-			case "jmp":
-				addInstruction(new Jmp(value));
-				break;
-			}
-		}
+		InstructionFactory facory = new InstructionFactory();
+		facory.registerInstruction("nop (?<number>[+-][0-9]+)", m -> new Nop(Integer.parseInt(m.group("number"))));
+		facory.registerInstruction("acc (?<number>[+-][0-9]+)", m -> new Acc(Integer.parseInt(m.group("number"))));
+		facory.registerInstruction("jmp (?<number>[+-][0-9]+)", m -> new Jmp(Integer.parseInt(m.group("number"))));
+		
+		facory.parseInstructions(program, this);
 	}
 	
 	@Override
