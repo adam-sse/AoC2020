@@ -5,62 +5,14 @@ import java.util.List;
 import java.util.Map;
 
 import util.Util;
-import virtual_machine.Instruction;
 import virtual_machine.InstructionFactory;
 import virtual_machine.VirtualMachine;
 
 public class PortComputer extends VirtualMachine {
 
-	private class Mask implements Instruction {
-
-		private String arg;
-		
-		public Mask(String value) {
-			this.arg = value;
-		}
-		
-		@Override
-		public void execute() {
-			currentMask = new Integer[currentMask.length];
-			
-			for (int i = 0; i < currentMask.length; i++) {
-				switch (arg.charAt(i)) {
-				case '1':
-					currentMask[i] = 1;
-					break;
-				case '0':
-					currentMask[i] = 0;
-					break;
-				case 'X':
-					break;
-				}
-			}
-		}
-		
-	}
-	
-	private class Mem implements Instruction {
-
-		private long address;
-		
-		private long value;
-		
-		public Mem(String address, String value) {
-			this.address = Long.parseLong(address);
-			this.value = Long.parseLong(value);
-		}
-
-		@Override
-		public void execute() {
-			setMemory(address, value);
-		}
-		
-	}
-	
 	private Integer[] currentMask;
 	
 	private Map<Long, Long> memory;
-	
 	
 	public PortComputer(List<String> program) {
 		currentMask = new Integer[36];
@@ -68,13 +20,34 @@ public class PortComputer extends VirtualMachine {
 		
 		InstructionFactory factory = new InstructionFactory();
 		factory.registerInstruction("mask = (?<value>[01X]{36})",
-				m -> new Mask(m.group("value")));
-		factory.registerInstruction("mem\\[(?<address>[0-9]+)\\] = (?<value>[0-9]+)",
-				m -> new Mem(m.group("address"), m.group("value")));
+				m -> () -> setMask(m.group("value")));
+		factory.registerInstruction("mem\\[(?<address>[0-9]+)\\] = (?<value>[0-9]+)", m -> {
+			long address = Long.parseLong(m.group("address"));
+			long value = Long.parseLong(m.group("value"));
+			return () -> {
+				setMemory(address, value);
+			};
+		});
 		
 		factory.parseInstructions(program, this);
 	}
 	
+	private void setMask(String newMaskStr) {
+		currentMask = new Integer[currentMask.length];
+		
+		for (int i = 0; i < currentMask.length; i++) {
+			switch (newMaskStr.charAt(i)) {
+			case '1':
+				currentMask[i] = 1;
+				break;
+			case '0':
+				currentMask[i] = 0;
+				break;
+			case 'X':
+				break;
+			}
+		}
+	}
 	
 	private void setMemory(Integer[] address, int i, long value) {
 		if (i == address.length) {
